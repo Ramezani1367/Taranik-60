@@ -46,25 +46,17 @@ class PlayerViewModel @Inject constructor(
     private val lyricsRepository: LyricsRepository,
     private val trackRepository: TrackRepository
 ) : BaseViewModel() {
-
     private val _state = MutableStateFlow(PlayerState())
     val state = _state.asStateFlow()
-
     private var mediaPlayer: MediaPlayer? = null
     private var progressJob: Job? = null
     private var serviceContext: Context? = null
     private var lastNotifiedLyricIndex: Int = -1
 
-    /**
-     * تنظیم context برای Foreground Service
-     */
     fun setServiceContext(context: Context) {
         serviceContext = context.applicationContext
     }
 
-    /**
-     * پخش یه ترک خاص + ساخت صف
-     */
     fun playTrack(track: Track, context: Context, allTracks: List<Track> = emptyList()) {
         stopPlayback()
         serviceContext = context.applicationContext
@@ -76,84 +68,49 @@ class PlayerViewModel @Inject constructor(
             mp.prepare()
             mp.start()
 
-            // سرعت پخش
             if (_state.value.playbackSpeed != 1.0f) {
-                try {
-                    mp.playbackParams = mp.playbackParams.setSpeed(_state.value.playbackSpeed)
-                } catch (_: Exception) {}
+                try { mp.playbackParams = mp.playbackParams.setSpeed(_state.value.playbackSpeed) } catch (_: Exception) {}
             }
 
             mediaPlayer = mp
 
-            // لود لیریک
             val lrcPath = lyricsRepository.findLrcForTrack(track.filePath)
-            val karaokeLines = if (lrcPath != null) {
-                lyricsRepository.readLrcFile(lrcPath)
-            } else emptyList()
+            val karaokeLines = if (lrcPath != null) lyricsRepository.readLrcFile(lrcPath) else emptyList()
 
-            // صف پخش
             val queueIndex = allTracks.indexOf(track).let { if (it >= 0) it else 0 }
 
             _state.update {
-                it.copy(
-                    currentTrack = track,
-                    isPlaying = true,
-                    progress = 0f,
-                    currentPositionMs = 0,
-                    totalDurationMs = mp.duration.toLong(),
-                    karaokeLines = karaokeLines,
-                    activeKaraokeIndex = -1,
-                    miniPlayerVisible = false,
-                    queue = allTracks,
-                    queueIndex = queueIndex
-                )
+                it.copy(currentTrack = track, isPlaying = true, progress = 0f, currentPositionMs = 0, totalDurationMs = mp.duration.toLong(), karaokeLines = karaokeLines, activeKaraokeIndex = -1, miniPlayerVisible = false, queue = allTracks, queueIndex = queueIndex)
             }
 
-            // شروع Foreground Service
             serviceContext?.let { ctx ->
-                val isDark = _state.value.repeatMode != RepeatMode.OFF // placeholder — ideally from settings
-                PlayerService.startWithTrack(ctx, track.displayName, track.displayArtist, track.albumId, true, true)
+                PlayerService.startWithTrack(ctx, track.displayName, track.displayArtist, track.albumId, true)
             }
-            lastNotifiedLyricIndex = -1
 
+            lastNotifiedLyricIndex = -1
             startProgressTracking()
 
-            mp.setOnCompletionListener {
-                onTrackCompleted()
-            }
+            mp.setOnCompletionListener { onTrackCompleted() }
         } catch (e: Exception) {
             _state.update { it.copy(isPlaying = false) }
         }
     }
 
-    /**
-     * بعد از اتمام ترک
-     */
     private fun onTrackCompleted() {
         val s = _state.value
         when (s.repeatMode) {
             RepeatMode.ONE -> {
-                s.currentTrack?.let { _ ->
+                s.currentTrack?.let {
                     _state.update { it.copy(progress = 0f, currentPositionMs = 0) }
                     mediaPlayer?.let { mp ->
-                        try {
-                            mp.seekTo(0)
-                            mp.start()
-                            startProgressTracking()
-                        } catch (_: Exception) {}
+                        try { mp.seekTo(0); mp.start(); startProgressTracking() } catch (_: Exception) {}
                     }
                 }
             }
-            RepeatMode.ALL -> {
-                skipNext()
-            }
+            RepeatMode.ALL -> skipNext()
             RepeatMode.OFF -> {
-                if (s.queueIndex < s.queue.size - 1) {
-                    skipNext()
-                } else {
-                    _state.update {
-                        it.copy(isPlaying = false, progress = 100f, miniPlayerVisible = false)
-                    }
+                if (s.queueIndex < s.queue.size - 1) skipNext() else {
+                    _state.update { it.copy(isPlaying = false, progress = 100f, miniPlayerVisible = false) }
                     progressJob?.cancel()
                     serviceContext?.let { PlayerService.stop(it) }
                 }
@@ -163,19 +120,9 @@ class PlayerViewModel @Inject constructor(
 
     fun togglePlay() {
         mediaPlayer?.let { mp ->
-            if (mp.isPlaying) {
-                mp.pause()
-                _state.update { it.copy(isPlaying = false) }
-                progressJob?.cancel()
-            } else {
-                mp.start()
-                _state.update { it.copy(isPlaying = true) }
-                startProgressTracking()
-            }
-            // بروزرسانی نوتیفیکیشن
-            serviceContext?.let { ctx ->
-                PlayerService.updatePlayState(ctx, _state.value.isPlaying)
-            }
+            if (mp.isPlaying) { mp.pause(); _state.update { it.copy(isPlaying = false) }; progressJob?.cancel() }
+            else { mp.start(); _state.update { it.copy(isPlaying = true) }; startProgressTracking() }
+            serviceContext?.let { ctx -> PlayerService.updatePlayState(ctx, _state.value.isPlaying) }
         }
     }
 
@@ -183,9 +130,7 @@ class PlayerViewModel @Inject constructor(
         mediaPlayer?.let { mp ->
             val pos = (mp.duration * percent / 100f).toInt()
             mp.seekTo(pos)
-            _state.update {
-                it.copy(progress = percent, currentPositionMs = pos.toLong())
-            }
+            _state.update { it.copy(progress = percent, currentPositionMs = pos.toLong()) }
             updateKaraokeIndex(pos.toLong())
         }
     }
@@ -193,86 +138,41 @@ class PlayerViewModel @Inject constructor(
     fun skipNext() {
         val s = _state.value
         if (s.queue.isEmpty()) return
-        val nextIndex = if (s.shuffleEnabled) {
-            (0 until s.queue.size).random()
-        } else {
-            (s.queueIndex + 1) % s.queue.size
-        }
+        val nextIndex = if (s.shuffleEnabled) (0 until s.queue.size).random() else (s.queueIndex + 1) % s.queue.size
         _state.update { it.copy(queueIndex = nextIndex) }
-
-        // پخش ترک بعدی
         val nextTrack = s.queue.getOrNull(nextIndex)
-        if (nextTrack != null && serviceContext != null) {
-            playTrack(nextTrack, serviceContext!!, s.queue)
-        }
+        if (nextTrack != null && serviceContext != null) playTrack(nextTrack, serviceContext!!, s.queue)
     }
 
     fun skipPrevious() {
         val s = _state.value
         if (s.queue.isEmpty()) return
-
         if (s.currentPositionMs > 3000) {
             mediaPlayer?.seekTo(0)
             _state.update { it.copy(progress = 0f, currentPositionMs = 0) }
         } else {
             val prevIndex = if (s.queueIndex > 0) s.queueIndex - 1 else s.queue.size - 1
             _state.update { it.copy(queueIndex = prevIndex) }
-
             val prevTrack = s.queue.getOrNull(prevIndex)
-            if (prevTrack != null && serviceContext != null) {
-                playTrack(prevTrack, serviceContext!!, s.queue)
-            }
+            if (prevTrack != null && serviceContext != null) playTrack(prevTrack, serviceContext!!, s.queue)
         }
     }
 
-    fun toggleShuffle() {
-        _state.update { it.copy(shuffleEnabled = !it.shuffleEnabled) }
-    }
+    fun toggleShuffle() { _state.update { it.copy(shuffleEnabled = !it.shuffleEnabled) } }
 
     fun cycleRepeatMode() {
-        _state.update {
-            it.copy(
-                repeatMode = when (it.repeatMode) {
-                    RepeatMode.OFF -> RepeatMode.ALL
-                    RepeatMode.ALL -> RepeatMode.ONE
-                    RepeatMode.ONE -> RepeatMode.OFF
-                }
-            )
-        }
+        _state.update { it.copy(repeatMode = when (it.repeatMode) { RepeatMode.OFF -> RepeatMode.ALL; RepeatMode.ALL -> RepeatMode.ONE; RepeatMode.ONE -> RepeatMode.OFF }) }
     }
 
     fun setPlaybackSpeed(speed: Float) {
         _state.update { it.copy(playbackSpeed = speed) }
-        mediaPlayer?.let { mp ->
-            try {
-                mp.playbackParams = mp.playbackParams.setSpeed(speed)
-            } catch (_: Exception) {}
-        }
+        mediaPlayer?.let { mp -> try { mp.playbackParams = mp.playbackParams.setSpeed(speed) } catch (_: Exception) {} }
     }
 
-    fun showMiniPlayer() {
-        val s = _state.value
-        if (s.currentTrack != null) {
-            _state.update { it.copy(miniPlayerVisible = true) }
-        }
-    }
-
-    fun hideMiniPlayer() {
-        _state.update { it.copy(miniPlayerVisible = false) }
-    }
-
-    fun getQueuedTrack(): Track? {
-        val s = _state.value
-        if (s.queue.isEmpty() || s.queueIndex < 0 || s.queueIndex >= s.queue.size) return null
-        return s.queue[s.queueIndex]
-    }
-
-    /**
-     * گرفتن URI کاور آلبوم
-     */
-    fun getAlbumArtUri(albumId: Long): Uri {
-        return trackRepository.getAlbumArtUri(albumId)
-    }
+    fun showMiniPlayer() { val s = _state.value; if (s.currentTrack != null) _state.update { it.copy(miniPlayerVisible = true) } }
+    fun hideMiniPlayer() { _state.update { it.copy(miniPlayerVisible = false) } }
+    fun getQueuedTrack(): Track? { val s = _state.value; if (s.queue.isEmpty() || s.queueIndex < 0 || s.queueIndex >= s.queue.size) return null; return s.queue[s.queueIndex] }
+    fun getAlbumArtUri(albumId: Long): Uri { return trackRepository.getAlbumArtUri(albumId) }
 
     private fun startProgressTracking() {
         progressJob?.cancel()
@@ -283,10 +183,7 @@ class PlayerViewModel @Inject constructor(
                         val current = mp.currentPosition.toLong()
                         val total = mp.duration.toLong()
                         val pct = if (total > 0) (current.toFloat() / total) * 100f else 0f
-
-                        _state.update {
-                            it.copy(progress = pct, currentPositionMs = current)
-                        }
+                        _state.update { it.copy(progress = pct, currentPositionMs = current) }
                         updateKaraokeIndex(current)
                     } catch (_: Exception) {}
                 }
@@ -298,18 +195,13 @@ class PlayerViewModel @Inject constructor(
     private fun updateKaraokeIndex(currentMs: Long) {
         val lines = _state.value.karaokeLines
         if (lines.isEmpty()) return
-
         val index = lines.indexOfLast { it.timeMs in 0..currentMs }
         if (index != _state.value.activeKaraokeIndex) {
             _state.update { it.copy(activeKaraokeIndex = index) }
-
-            // بروزرسانی لیریک در نوتیفیکیشن (فقط اگه خط عوض شده)
             if (index >= 0 && index != lastNotifiedLyricIndex) {
                 lastNotifiedLyricIndex = index
                 val line = lines[index]
-                serviceContext?.let { ctx ->
-                    PlayerService.updateLyric(ctx, line.text, line.translation ?: "")
-                }
+                serviceContext?.let { ctx -> PlayerService.updateLyric(ctx, line.text, line.translation ?: "") }
             }
         }
     }
