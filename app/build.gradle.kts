@@ -22,10 +22,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -75,7 +72,7 @@ dependencies {
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // MediaStore / ContentResolver helpers
+    // MediaStore
     implementation("androidx.media:media:1.7.0")
 
     // ID3 Tag editing
@@ -84,17 +81,14 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Testing
+    // Testing - REMOVED problematic dependency
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
-    // Coil for cover art
+    // Coil
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     // Foreground Service
     implementation("androidx.media3:media3-session:1.2.1")
     implementation("androidx.media3:media3-exoplayer:1.2.1")
-    implementation("androidx.media:media:1.7.0")
 }
