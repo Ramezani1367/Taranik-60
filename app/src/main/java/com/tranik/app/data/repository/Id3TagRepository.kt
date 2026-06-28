@@ -2,15 +2,13 @@ package com.tranik.app.data.repository
 
 import com.mpatric.mp3agic.Mp3File
 import com.tranik.app.data.model.DirtyTag
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class Id3TagRepository @Inject constructor() {
 
-    /**
-     * خواندن تگ‌های ID3 از فایل واقعی
-     */
     fun readTags(filePath: String): Map<String, String> {
         return try {
             val mp3 = Mp3File(filePath)
@@ -37,24 +35,19 @@ class Id3TagRepository @Inject constructor() {
                 tags["trackNumber"] = tag.track ?: ""
                 tags["comment"] = tag.comment ?: ""
             }
-
             tags
         } catch (e: Exception) {
             emptyMap()
         }
     }
 
-    /**
-     * نوشتن تگ‌های ID3 روی فایل واقعی
-     */
     fun writeTags(filePath: String, tags: Map<String, String>): Result<String> {
         return try {
             val mp3 = Mp3File(filePath)
 
-            // اگه تگ ID3v2 نداره، بساز
             if (!mp3.hasId3v2Tag()) {
                 mp3.removeId3v1Tag()
-                mp3.setId3v2TagIfExist()
+                mp3.addId3v2Tag()
             }
 
             val tag = mp3.id3v2Tag
@@ -73,9 +66,8 @@ class Id3TagRepository @Inject constructor() {
             val outPath = "$filePath.tmp"
             mp3.save(outPath)
 
-            // جایگزینی فایل اصلی
-            val original = java.io.File(filePath)
-            val temp = java.io.File(outPath)
+            val original = File(filePath)
+            val temp = File(outPath)
             original.delete()
             temp.renameTo(original)
 
@@ -85,19 +77,16 @@ class Id3TagRepository @Inject constructor() {
         }
     }
 
-    /**
-     * تشخیص تگ‌های کثیف (حاوی URL، HTML و...)
-     */
     fun detectDirtyTags(filePath: String): List<DirtyTag> {
         val tags = readTags(filePath)
         val dirtyTags = mutableListOf<DirtyTag>()
 
         val suspiciousPatterns = listOf(
-            Regex("""\[.*\]""", RegexOption.IGNORE_CASE),   // [www.site.com]
-            Regex("""https?://""", RegexOption.IGNORE_CASE), // URLs
-            Regex("""www\."""),                                // www.
-            Regex("""<[^>]+>"""),                              // HTML tags
-            Regex("""\.com|\.net|\.org""", RegexOption.IGNORE_CASE)
+            Regex("""\[.*\]""", RegexOption.IGNORE_CASE),
+            Regex("""https?://""", RegexOption.IGNORE_CASE),
+            Regex("""www\."""),
+            Regex("""<[^>]+>"""),
+            Regex(""".com|.net|.org""", RegexOption.IGNORE_CASE)
         )
 
         tags.forEach { (key, value) ->
@@ -106,21 +95,13 @@ class Id3TagRepository @Inject constructor() {
                     if (pattern.containsMatchIn(value)) {
                         val cleaned = pattern.replace(value, "").trim()
                         if (cleaned.isNotBlank() && cleaned != value) {
-                            dirtyTags.add(
-                                DirtyTag(
-                                    field = fieldLabel(key),
-                                    key = key,
-                                    oldValue = value,
-                                    newValue = cleaned
-                                )
-                            )
-                            return@forEach // فقط اولین الگوی مشکوک
+                            dirtyTags.add(DirtyTag(field = fieldLabel(key), key = key, oldValue = value, newValue = cleaned))
+                            return@forEach
                         }
                     }
                 }
             }
         }
-
         return dirtyTags
     }
 
