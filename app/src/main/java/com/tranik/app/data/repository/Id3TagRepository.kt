@@ -1,6 +1,7 @@
 package com.tranik.app.data.repository
 
 import com.mpatric.mp3agic.Mp3File
+import com.mpatric.mp3agic.ID3v2Tag
 import com.tranik.app.data.model.DirtyTag
 import java.io.File
 import javax.inject.Inject
@@ -45,9 +46,10 @@ class Id3TagRepository @Inject constructor() {
         return try {
             val mp3 = Mp3File(filePath)
 
+            // اگه تگ ID3v2 نداره، بساز
             if (!mp3.hasId3v2Tag()) {
                 mp3.removeId3v1Tag()
-                mp3.addId3v2Tag()
+                mp3.setId3v2Tag(ID3v2Tag())
             }
 
             val tag = mp3.id3v2Tag
