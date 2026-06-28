@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ترانیک</string>
+    <string name="notification_channel_name">پخش موسیقی</string>
+    <string name="notification_channel_description">کنترل پخش موسیقی با نمایش لیریک</string>
+    <string name="player_notification_title">ترانیک در حال پخش</string>
+    <string name="permission_required">اجازه دسترسی به فایل‌های صوتی لازم است</string>
+    <string name="permission_grant">اجازه دسترسی</string>
+    <string name="no_tracks_found">آهنگی یافت نشد</string>
+    <string name="search_hint">جستجو در آهنگ‌ها…</string>
+</resources>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Severity levels: fatal, error, warning, information, ignore -->
+
+    <!-- Compose -->
+    <issue id="ComposeModifierMissing" severity="warning" />
+    <issue id="ComposeUnstableCollections" severity="information" />
+    <issue id="ComposeCompositionLocalUsage" severity="information" />
+
+    <!-- Coroutines -->
+    <issue id="UnrememberedAnimatable" severity="error" />
+    <issue id="UnrememberedMutableInteractionSource" severity="error" />
+
+    <!-- Accessibility -->
+    <issue id="ContentDescription" severity="warning" />
+    <issue id="ClickableViewAccessibility" severity="warning" />
+    <issue id="KeyboardInaccessibleWidget" severity="warning" />
+
+    <!-- Performance -->
+    <issue id="UnusedResources" severity="warning" />
+    <issue id="IconMissingDensityFolder" severity="information" />
+    <issue id="Overdraw" severity="information" />
+    <issue id="UseCompoundDrawables" severity="information" />
+
+    <!-- Correctness -->
+    <issue id="ObsoleteSdkInt" severity="warning" />
+    <issue id="NewApi" severity="error" />
+    <issue id="MissingTranslation" severity="information" />
+    <issue id="ExtraTranslation" severity="information" />
+
+    <!-- Security -->
+    <issue id="AllowBackup" severity="warning" />
+    <issue id="ExportedContentProvider" severity="warning" />
+    <issue id="ExportedService" severity="warning" />
+    <issue id="SetJavaScriptEnabled" severity="warning" />
+
+    <!-- Disable noisy rules -->
+    <issue id="Typos" severity="ignore" />
+    <issue id="SyntheticAccessor" severity="ignore" />
+    <issue id="IconExpectedSize" severity="ignore" />
+</lint>
