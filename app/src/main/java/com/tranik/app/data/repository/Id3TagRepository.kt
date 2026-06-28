@@ -47,7 +47,7 @@ class Id3TagRepository @Inject constructor() {
 
             if (!mp3.hasId3v2Tag()) {
                 mp3.removeId3v1Tag()
-                mp3.insertId3v2Tag()
+                mp3.addId3v2Tag()
             }
 
             val tag = mp3.id3v2Tag
