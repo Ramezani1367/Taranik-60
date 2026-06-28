@@ -40,10 +40,6 @@ android {
     buildFeatures {
         compose = true
     }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.11"
-    }
 }
 
 dependencies {
@@ -96,7 +92,4 @@ dependencies {
     implementation("androidx.media3:media3-session:1.2.1")
     implementation("androidx.media3:media3-exoplayer:1.2.1")
     implementation("androidx.media:media:1.7.0")
-}
-composeOptions {
-    kotlinCompilerExtensionVersion = "1.5.11"
 }
