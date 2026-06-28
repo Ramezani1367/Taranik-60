@@ -25,19 +25,14 @@ data class Track(
     val dateAdded: Long = 0,
     val dateModified: Long = 0
 ) : Parcelable {
-
     val duration: String
         get() = formatDuration(durationMs)
-
     val displayArtist: String
         get() = if (artist.isNotBlank() && artist != "<unknown>") artist else "نامشخص"
-
     val displayAlbum: String
         get() = if (album.isNotBlank() && album != "<unknown>") album else "نامشخص"
-
     val displayName: String
         get() = if (title.isNotBlank()) title else filePath.substringAfterLast("/")
-
     companion object {
         fun empty() = Track(id = -1, title = "", artist = "", durationMs = 0)
     }
@@ -51,7 +46,6 @@ data class Folder(
     val trackCount: Int = 0,
     val lastModified: Long = 0
 ) : Parcelable {
-
     val id: String
         get() = path.hashCode().toString()
 }
@@ -65,10 +59,8 @@ data class LyricLine(
     val isCurrent: Boolean = false,
     val translation: String? = null
 ) : Parcelable {
-
     val time: String
         get() = if (timeMs >= 0) formatDuration(timeMs) else "--:--"
-
     val lrcTimeTag: String
         get() {
             if (timeMs < 0) return ""
@@ -77,9 +69,7 @@ data class LyricLine(
             val hundredths = (timeMs % 1000) / 10
             return "%02d:%02d.%02d".format(minutes, seconds, hundredths)
         }
-
     fun withTime(newTimeMs: Long) = copy(timeMs = newTimeMs, synced = true)
-
     fun withTranslation(t: String) = copy(translation = t)
 }
 
