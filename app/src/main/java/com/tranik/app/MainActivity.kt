@@ -113,7 +113,7 @@ fun TarAnikAppContent() {
         libraryVm.globalError.collect { error ->
             error?.let {
                 snackbarHostState.showSnackbar(it)
-                libraryVm.clearGlobalError()
+           libraryVm.clearError()
             }
         }
     }
